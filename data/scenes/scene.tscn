@@ -3,12 +3,7 @@
 [ext_resource path="res://data/prefabs/unit.tscn" type="PackedScene" id=1]
 [ext_resource path="res://data/scripts/Actors/Actor.cs" type="Script" id=2]
 
-[node name="World" type="Node"]
-
-[node name="Actor" parent="." instance=ExtResource( 1 )]
-
-position = Vector2( 116.149, 78.8669 )
-script = ExtResource( 2 )
+[node name="Scene" type="Node"]
 
 [node name="Label" type="Label" parent="."]
 
@@ -52,5 +47,22 @@ editor_draw_screen = true
 editor_draw_limits = false
 editor_draw_drag_margin = false
 _sections_unfolded = [ "Transform" ]
+
+[node name="World" type="Node2D" parent="."]
+
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Actor" parent="World" instance=ExtResource( 1 )]
+
+modulate = Color( 1, 1, 1, 0.625647 )
+position = Vector2( 116.149, 78.8669 )
+script = ExtResource( 2 )
+_sections_unfolded = [ "Material", "Transform", "Visibility" ]
+
+[node name="Actor2" parent="World" instance=ExtResource( 1 )]
+
+position = Vector2( 302.766, 148.848 )
 
 

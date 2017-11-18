@@ -9,7 +9,7 @@ _sections_unfolded = [ "Transform" ]
 [node name="Body" type="Sprite" parent="."]
 
 texture = ExtResource( 1 )
-_sections_unfolded = [ "Transform" ]
+_sections_unfolded = [ "Material", "Transform", "Visibility" ]
 
 [node name="State" type="Label" parent="."]
 

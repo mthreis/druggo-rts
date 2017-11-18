@@ -52,6 +52,7 @@
     <Compile Include="data\scripts\Actors\Actor.cs" />
     <Compile Include="data\scripts\Actors\ActorStateHandler.cs" />
     <Compile Include="data\scripts\Actors\States\MoveTo.cs" />
+    <Compile Include="data\scripts\NodeExt.cs" />
     <Compile Include="data\scripts\Point2.cs" />
     <Compile Include="data\scripts\RWorld.cs" />
     <Compile Include="data\scripts\Actors\States\Idle.cs" />

@@ -27,6 +27,11 @@ namespace DruggoRTS
         /// </summary>
         public float Angle { get; private set; }
 
+        public const float Size = 64;
+
+        readonly float[] avoidanceAngles = { 0, Mathf.PI / 6, -Mathf.PI / 6, Mathf.PI / 4, -Mathf.PI / 4, Mathf.PI / 3, -Mathf.PI / 3, Mathf.PI / 2, -Mathf.PI / 2 };
+
+
         //These are used for state handling.
         ActorState state;
         ActorState nextState;
@@ -46,6 +51,9 @@ namespace DruggoRTS
             if (nextStateHandler != null)
             {
                 ChangeStates();
+
+                //DEBUG: draw the current state.
+                this.GetNodeOf<Label>("State").Text = state.ToString();
             }
 
             //Update state handler and _Draw()
@@ -61,12 +69,14 @@ namespace DruggoRTS
 
         public override void _Draw()
         {
+            //Blackmagicka
+            var inv = GlobalTransform.inverse();
+            DrawSetTransform(inv.Origin, inv.Rotation + Mathf.PI, inv.Scale);
+
+            //DrawCircle(Position, Size, Color.Color8(255, 255, 255, 255));
+
             if (state == ActorState.MoveTo)
             {
-                //Blackmagicka
-                var inv = GlobalTransform.inverse();
-                DrawSetTransform(inv.Origin, inv.Rotation + Mathf.PI, inv.Scale);
-
                 //Draw line from my position to my goalpos
                 DrawLine(Position, (stateHandler as MoveTo).GoalPos, Color.Color8(255, 255, 255, 255));
             }
@@ -87,9 +97,52 @@ namespace DruggoRTS
             //Nullify the next.
             nextStateHandler = null;
             nextState = ActorState.Idle;
+        }
 
-            //DEBUG: draw the current state.
-            (GetNode("State") as Label).Text = state.ToString();
+        /// <summary>
+        /// Check collisions with dynamic objects (such as actors).
+        /// </summary>
+        /// <returns></returns>
+        public bool IsCollidingWithDynamic(Vector2 pos, float offset)
+        {
+            var p = GetParent();
+            var checkAt = Position + GetPointInAngle(offset, GetAngleTo(pos));
+
+            foreach (Node2D actor in p.GetChildren())
+            {
+                if (actor != this)
+                {
+                    var distance = (checkAt - actor.Position).length_squared();
+
+                    if (distance < Size * Size)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public bool IsCollidingInAngle(float angle, float offset)
+        {
+            var p = GetParent();
+            var checkAt = Position + GetPointInAngle(offset, angle);
+
+            foreach (Node2D actor in p.GetChildren())
+            {
+                if (actor != this)
+                {
+                    var distance = (checkAt - actor.Position).length_squared();
+
+                    if (distance < Size * Size)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         #region Orders
@@ -123,7 +176,22 @@ namespace DruggoRTS
         public void MoveTowards(Vector2 pos)
         {
             var angle = (pos - Position).angle();
-            MoveAtAngle(angle);
+            var i = 0;
+
+            while(IsCollidingInAngle(angle + avoidanceAngles[i], 16))
+            {
+                GD.print("There's collision at " + Mathf.rad2deg(angle + avoidanceAngles[i]));
+
+                i++;
+
+                if (i >= avoidanceAngles.Length)
+                {
+                    OrderBeIdle();
+                    return;
+                }
+            }
+            GD.print("I CAN MOVE AT " + Mathf.rad2deg(angle + avoidanceAngles[i]));
+            MoveAtAngle(angle + avoidanceAngles[i]);
         }
 
         /// <summary>
@@ -136,6 +204,11 @@ namespace DruggoRTS
 
             Translate(moveAt * Speed);
             Angle = radians;
+        }
+
+        Vector2 GetPointInAngle(float length, float radians)
+        {
+            return new Vector2(Mathf.cos(radians) * length, Mathf.sin(radians) * length);
         }
 
         #endregion
