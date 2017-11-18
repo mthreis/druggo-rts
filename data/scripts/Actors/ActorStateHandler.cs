@@ -22,7 +22,7 @@ namespace DruggoRTS
         /// <summary>
         /// What happens every frame.
         /// </summary>
-        public virtual void OnUpdate()
+        public virtual void OnUpdate(float dt)
         {
 
         }

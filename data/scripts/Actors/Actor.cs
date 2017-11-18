@@ -1,4 +1,5 @@
 ﻿using Godot;
+using System.Collections.Generic;
 
 namespace DruggoRTS
 {
@@ -15,8 +16,15 @@ namespace DruggoRTS
         MoveTo
     }
 
+    public enum MoveWith { Left, Middle, Right, Random }
+
     public class Actor : Node2D
     {
+        [Export]
+        public MoveWith moveWith;
+
+        public Circle CollisionBox { get; set; }
+
         /// <summary>
         /// Movement speed of the actor (per frame).
         /// </summary>
@@ -27,10 +35,36 @@ namespace DruggoRTS
         /// </summary>
         public float Angle { get; private set; }
 
-        public const float Size = 64;
+        /// <summary>
+        /// Actor's size, used for avoidance.
+        /// </summary>
+        public const float Size = 32;
 
-        readonly float[] avoidanceAngles = { 0, Mathf.PI / 6, -Mathf.PI / 6, Mathf.PI / 4, -Mathf.PI / 4, Mathf.PI / 3, -Mathf.PI / 3, Mathf.PI / 2, -Mathf.PI / 2 };
+        public const float CollisionCheckAhead = 12;
 
+        readonly float[] avoidanceAngles =
+        {
+            //first the actor tries to move straight (no additions to its move angle)
+            0,
+
+            //then, if there's an obstacle at that angle, tries to find free spots at 30 degrees of each side
+             Mathf.PI / 6f,
+            -Mathf.PI / 6f,
+
+            //then, 60
+             Mathf.PI / 3f,
+            -Mathf.PI / 3f,
+
+            //then 90
+             Mathf.PI / 2f,
+            -Mathf.PI / 2f
+        };
+
+        //not used yet
+        readonly int[] AvoidanceL = { 1, 3, 5 };
+        readonly int[] AvoidanceR = { 2, 4, 6 };
+
+        public Color DrawLineColor { get; set; }
 
         //These are used for state handling.
         ActorState state;
@@ -40,12 +74,16 @@ namespace DruggoRTS
 
         public override void _Ready()
         {
+            CollisionBox = new Circle(Position, Size);
+
+            DrawLineColor = new Color(1, 1, 1);
+
             //Set the default state handler to IDLE. The state handlers give orders to their own actors.
             stateHandler = new Idle(this);
             state = ActorState.Idle;
         }
 
-        public override void _Process(float delta)
+        public override void _Process(float dt)
         {
             //Change the state if requested last frame.
             if (nextStateHandler != null)
@@ -57,13 +95,37 @@ namespace DruggoRTS
             }
 
             //Update state handler and _Draw()
-            stateHandler.OnUpdate();
             Update();
+            stateHandler.OnUpdate(dt);
 
             //Order actor to move to mouse's position if right mouse button is clicked.
-            if (Input.IsMouseButtonPressed(GD.BUTTON_RIGHT))
+            if (moveWith == MoveWith.Right)
             {
-                OrderMoveTo(GetGlobalMousePosition());
+                if (Input.IsMouseButtonPressed(GD.BUTTON_RIGHT))
+                {
+                    OrderMoveTo(GetGlobalMousePosition());
+                }
+            }
+            else if (moveWith == MoveWith.Left)
+            {
+                if (Input.IsMouseButtonPressed(GD.BUTTON_LEFT))
+                {
+                    OrderMoveTo(GetGlobalMousePosition());
+                }
+            }
+            else if (moveWith == MoveWith.Middle)
+            {
+                if (Input.IsMouseButtonPressed(GD.BUTTON_MIDDLE))
+                {
+                    OrderMoveTo(GetGlobalMousePosition());
+                }
+            }
+            else if (moveWith == MoveWith.Random)
+            {
+                if (state == ActorState.Idle)
+                {
+                    OrderMoveTo(new Vector2(Randomizer.Get(100, 924), Randomizer.Get(100, 500)));
+                }
             }
         }
 
@@ -73,12 +135,12 @@ namespace DruggoRTS
             var inv = GlobalTransform.inverse();
             DrawSetTransform(inv.Origin, inv.Rotation + Mathf.PI, inv.Scale);
 
-            //DrawCircle(Position, Size, Color.Color8(255, 255, 255, 255));
+            DrawCircle(CollisionBox.Position, CollisionBox.Radius, Color.Color8(255, 255, 255, 255));
 
             if (state == ActorState.MoveTo)
             {
                 //Draw line from my position to my goalpos
-                DrawLine(Position, (stateHandler as MoveTo).GoalPos, Color.Color8(255, 255, 255, 255));
+                DrawLine(Position, (stateHandler as MoveTo).GoalPos, DrawLineColor);
             }
         }
 
@@ -98,6 +160,8 @@ namespace DruggoRTS
             nextStateHandler = null;
             nextState = ActorState.Idle;
         }
+
+        #region Collision Checking
 
         /// <summary>
         /// Check collisions with dynamic objects (such as actors).
@@ -124,6 +188,60 @@ namespace DruggoRTS
             return false;
         }
 
+        public bool IsCollidingWithActor(Actor actor)
+        {
+            var distance = (CollisionBox.Position - actor.CollisionBox.Position).length_squared();
+            var radius = CollisionBox.Radius + actor.CollisionBox.Radius;
+
+            return (distance <= radius * radius);
+        }
+
+        public bool IsBoxCollidingWithActors(Circle box, List<Actor> actors)
+        {
+            foreach(var actor in actors)
+            {
+                if (box.IsCollidingWith(actor.CollisionBox))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool IsCollidingWithActor(Circle collisionBox, Actor actor)
+        {
+            var distance = (collisionBox.Position - actor.CollisionBox.Position).length_squared();
+            var radius = collisionBox.Radius + actor.CollisionBox.Radius;
+
+            return (distance <= radius * radius);
+        }
+
+
+        public bool IsCollidingWithActorsInAngle(float addToAngle)
+        {
+            var p = GetParent();
+            //var checkAt = CollisionBox.Position + GetPointInAngle(offset, angle);
+            //var addAngle = 0f;
+
+
+            var cBox = new Circle(Position + GetPointInAngle(Speed * CollisionCheckAhead, Angle + addToAngle), CollisionBox.Radius);
+
+            foreach (Node2D actor in p.GetChildren())
+            {
+                if (actor is Actor && actor != this)
+                {
+                    if (IsCollidingWithActor(cBox, actor as Actor))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            CollisionBox = cBox;
+            return false;
+        } 
+
         public bool IsCollidingInAngle(float angle, float offset)
         {
             var p = GetParent();
@@ -145,6 +263,8 @@ namespace DruggoRTS
             return false;
         }
 
+        #endregion
+
         #region Orders
 
         /// <summary>
@@ -152,6 +272,8 @@ namespace DruggoRTS
         /// </summary>
         public void OrderBeIdle()
         {
+            CollisionBox = new Circle(Position, CollisionBox.Radius);
+
             nextStateHandler = new Idle(this);
             nextState = ActorState.Idle;
         }
@@ -170,28 +292,78 @@ namespace DruggoRTS
         #region Actions
 
         /// <summary>
-        /// Moves towards a specified vector, is meant to be used by state handlers only.
+        /// Moves towards a specified vector, is meant to be used by state handlers only. Returns if the actor can move or not.
         /// </summary>
         /// <param name="pos"></param>
-        public void MoveTowards(Vector2 pos)
+        public bool MoveTowards(Vector2 pos)
         {
+            //Get the angle from self to goal position
             var angle = (pos - Position).angle();
+            int i = 0;
+
+            var actors = GetActors();
+
+            //Create a temp box to check for collisions in the specified angles
+            var cBox = new Circle(Position + GetPointInAngle(CollisionCheckAhead * Speed, angle + avoidanceAngles[i]), CollisionBox.Radius);
+
+            while (IsBoxCollidingWithActors(cBox, actors))
+            {
+                //GD.print("There's collision at " + Mathf.rad2deg(angle + avoidanceAngles[i]));
+                i++;
+
+                //Update the box position to check collisions in another angle
+                cBox = new Circle(Position + GetPointInAngle(CollisionCheckAhead * Speed, angle + avoidanceAngles[i]), CollisionBox.Radius);
+
+                //If there's collision in any of the possible angles, return false and let the state handler deal with that
+                if (i >= avoidanceAngles.Length - 1)
+                {
+                    CollisionBox = new Circle(Position, CollisionBox.Radius);
+                    return false;
+                }
+            }
+
+            //If it has gone that far, the actor managed to find a free spot!
+
+            //Move at the free angle, update the bounding box and return true
+            MoveAtAngle(angle + avoidanceAngles[i]);
+            CollisionBox = cBox;
+            return true;
+
+            /*
             var i = 0;
 
-            while(IsCollidingInAngle(angle + avoidanceAngles[i], 16))
+            while(IsCollidingWithActorsInAngle(avoidanceAngles[i]))
             {
-                GD.print("There's collision at " + Mathf.rad2deg(angle + avoidanceAngles[i]));
-
+                //GD.print("There's collision at " + Mathf.rad2deg(angle + avoidanceAngles[i]));
                 i++;
 
                 if (i >= avoidanceAngles.Length)
                 {
-                    OrderBeIdle();
-                    return;
+                    CollisionBox = new Circle(Position, CollisionBox.Radius);
+                    return false;
                 }
             }
-            GD.print("I CAN MOVE AT " + Mathf.rad2deg(angle + avoidanceAngles[i]));
+
+            //GD.print("I CAN MOVE AT " + Mathf.rad2deg(angle + avoidanceAngles[i]));
             MoveAtAngle(angle + avoidanceAngles[i]);
+            CollisionBox = new Circle(Position + GetPointInAngle(Speed * 16f, Angle), CollisionBox.Radius);
+            return true;
+            */
+        }
+
+        public List<Actor> GetActors(bool includeSelf = false)
+        {
+            var actors = new List<Actor>();
+
+            foreach (Node2D actor in GetParent().GetChildren())
+            {
+                if (actor is Actor && (actor != this || includeSelf))
+                {
+                    actors.Add(actor as Actor);
+                }
+            }
+
+            return actors;
         }
 
         /// <summary>

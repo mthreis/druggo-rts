@@ -56,13 +56,68 @@ __meta__ = {
 
 [node name="Actor" parent="World" instance=ExtResource( 1 )]
 
-modulate = Color( 1, 1, 1, 0.625647 )
 position = Vector2( 116.149, 78.8669 )
 script = ExtResource( 2 )
 _sections_unfolded = [ "Material", "Transform", "Visibility" ]
+index = 4
+moveWith = 2
 
 [node name="Actor2" parent="World" instance=ExtResource( 1 )]
 
-position = Vector2( 302.766, 148.848 )
+position = Vector2( 305.221, 148.848 )
+script = ExtResource( 2 )
+_sections_unfolded = [ "Transform", "Visibility" ]
+index = 4
+moveWith = 3
+
+[node name="Actor3" parent="World" instance=ExtResource( 1 )]
+
+position = Vector2( 251.2, 243.384 )
+script = ExtResource( 2 )
+_sections_unfolded = [ "Transform", "Visibility" ]
+index = 4
+moveWith = 3
+
+[node name="Actor4" parent="World" instance=ExtResource( 1 )]
+
+position = Vector2( 379.265, 299.494 )
+script = ExtResource( 2 )
+index = 4
+moveWith = 3
+
+[node name="Actor5" parent="World" instance=ExtResource( 1 )]
+
+position = Vector2( 440.273, 137.798 )
+script = ExtResource( 2 )
+index = 4
+moveWith = 3
+
+[node name="Actor6" parent="World" instance=ExtResource( 1 )]
+
+position = Vector2( 561.819, 280.216 )
+script = ExtResource( 2 )
+index = 4
+moveWith = 3
+
+[node name="Actor7" parent="World" instance=ExtResource( 1 )]
+
+position = Vector2( 143.159, 339.148 )
+script = ExtResource( 2 )
+index = 4
+moveWith = 3
+
+[node name="Actor8" parent="World" instance=ExtResource( 1 )]
+
+position = Vector2( 259.795, 434.912 )
+script = ExtResource( 2 )
+index = 4
+moveWith = 3
+
+[node name="Actor9" parent="World" instance=ExtResource( 1 )]
+
+position = Vector2( 479.56, 389.485 )
+script = ExtResource( 2 )
+index = 4
+moveWith = 3
 
 
