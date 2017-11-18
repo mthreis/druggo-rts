@@ -1,0 +1,6 @@
+C:\Users\m_gon\Documents\Godot\Projects\DruggoRTS\.mono\temp\bin\Debug\DruggoRTS.dll
+C:\Users\m_gon\Documents\Godot\Projects\DruggoRTS\.mono\temp\bin\Debug\DruggoRTS.pdb
+C:\Users\m_gon\Documents\Godot\Projects\DruggoRTS\.mono\temp\obj\Debug\DruggoRTS.csprojResolveAssemblyReference.cache
+C:\Users\m_gon\Documents\Godot\Projects\DruggoRTS\.mono\temp\obj\Debug\DruggoRTS.csproj.CoreCompileInputs.cache
+C:\Users\m_gon\Documents\Godot\Projects\DruggoRTS\.mono\temp\obj\Debug\DruggoRTS.dll
+C:\Users\m_gon\Documents\Godot\Projects\DruggoRTS\.mono\temp\obj\Debug\DruggoRTS.pdb
